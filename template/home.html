@@ -1,10 +1,18 @@
+{% load static from static %}
+
 <html>
   <head>
     <title>Video Live Stream</title>
+    <script src="{% static 'script/main.js' %}"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
   <body>
     <h1>Video Live Stream</h1>
-    <img src = "{% url 'movement' %}">
-    <!--<img src = "{% url 'video_feed' %}">-->
+    <div>
+      <button onclick="myFunction()">change view option</button>
+    </div>
+    <div>
+      <img id="image" src = "{% url 'movement' %}">
+    </div>
   </body>
 </html>

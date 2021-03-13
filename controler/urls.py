@@ -5,5 +5,6 @@ from controler import views
 urlpatterns = [
     path('', views.index, name='index'),
     path('video_feed', views.video_feed, name='video_feed'),
-    path('movement', views.movement, name='movement')
+    path('movement', views.movement, name='movement'),
+    path('classify', views.classify, name='classify'),
     ]

@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from django.http.response import StreamingHttpResponse
-from controler.camera import VideoCamera, Movement
+from controler.camera import VideoCamera, Movement, Classify
+from PIL import Image
+import binascii
 # Create your views here.
 
 def index(request):
@@ -18,4 +20,8 @@ def video_feed(request):
 
 def movement(request):
 	return StreamingHttpResponse(gen(Movement()),
+					content_type='multipart/x-mixed-replace; boundary=frame')
+
+def classify(request):
+	return StreamingHttpResponse(gen(Classify()),
 					content_type='multipart/x-mixed-replace; boundary=frame')
