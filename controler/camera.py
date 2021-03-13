@@ -4,8 +4,6 @@ from django.conf import settings
 
 class Classify(object):
     def __init__(self):
-
-        # MobileNetSSD Settings
         self.confidenceDef       = 0.5
         prototxtFile        = os.path.join(settings.BASE_DIR,"static/MobileNetSSD_deploy.prototxt.txt")
         modelFile           = os.path.join(settings.BASE_DIR,"static/MobileNetSSD_deploy.caffemodel")
@@ -49,13 +47,7 @@ class Classify(object):
                     cv2.putText(frame, label, (startX, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.colorsMobileNetSSD[idx], 2)
         return frame
 
-
-    def get_frame(self):
-        # We are using Motion JPEG, but OpenCV defaults to capture raw images,
-        # so we must encode it into JPEG in order to correctly display the
-        # video stream.
-
-        # Camera Settings
+    def get_frame_clas(self):
         camera_Width  = 640 # 1024 # 1280 # 640
         camera_Heigth = 480 # 780  # 960  # 480
         frameSize = (camera_Width, camera_Heigth)
@@ -63,67 +55,60 @@ class Classify(object):
         (W, H) = (None, None)
         detectionEnabled = True
         
-        ret, frameOrig = self.video_capture.read()
-        if ret:
-                
-            frame = cv2.resize(frameOrig, frameSize)
+        ret, frameOrig = self.one_frame()
+        frame = cv2.resize(frameOrig, frameSize)
 
-            if(detectionEnabled):
-                frame=self.analyzeFrame(frame)
+        if(detectionEnabled):
+            frame=self.analyzeFrame(frame)
             
-            ret, jpeg = cv2.imencode('.jpg', frame)
-            return jpeg.tobytes()
-        else:
-            self.get_frame()
+        ret, jpeg = cv2.imencode('.jpg', frame)
+        return jpeg.tobytes()
+        
+    def get_frame_move(self):
+        frame1, frame2 = self.two_frame()
 
-
-class Movement(object):
-    def __init__(self):
-        self.video_capture1 = cv2.VideoCapture(0)
-
-    def __del__(self):
-        self.video_capture1.release()
-
-    def get_frame(self):
-        ret, frame1 = self.video_capture1.read()
-        ret1, frame2 = self.video_capture1.read()
-        if ret==True and ret1==True:
-
-            diff = cv2.absdiff(frame1, frame2)
-            gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-            blur = cv2.GaussianBlur(gray, (5,5), 0)
-            _, thresh = cv2.threshold(blur, 20, 255, cv2.THRESH_BINARY)
-            dilated = cv2.dilate(thresh, None, iterations=3)
-            contours, _ = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        diff = cv2.absdiff(frame1, frame2)
+        gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(gray, (5,5), 0)
+        _, thresh = cv2.threshold(blur, 20, 255, cv2.THRESH_BINARY)
+        dilated = cv2.dilate(thresh, None, iterations=3)
+        contours, _ = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
                 
-            for contour in contours:
-                (x, y, w, h) = cv2.boundingRect(contour)
+        for contour in contours:
+            (x, y, w, h) = cv2.boundingRect(contour)
 
-                '''if cv2.contourArea(contour) < 900:
-                    continue'''
-                cv2.rectangle(frame1, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                cv2.putText(frame1, "Status: {}".format('Movement'), (10, 20), cv2.FONT_HERSHEY_SIMPLEX,
-                            1, (0, 0, 255), 3)
-            #cv2.drawContours(frame1, contours, -1, (0, 255, 0), 2)
+            '''if cv2.contourArea(contour) < 900:
+                continue'''
+            cv2.rectangle(frame1, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            cv2.putText(frame1, "Status: {}".format('Movement'), (10, 20), cv2.FONT_HERSHEY_SIMPLEX,
+                        1, (0, 0, 255), 3)
+        #cv2.drawContours(frame1, contours, -1, (0, 255, 0), 2)
 
-            ret, jpeg = cv2.imencode('.jpg', frame1)
-            return jpeg.tobytes()
-        else:
-            self.get_frame()
-
-class VideoCamera(object):
-    def __init__(self):
-        self.video_capture2 = cv2.VideoCapture(0)
-
-    def __del__(self):
-        self.video_capture2.release()
+        ret, jpeg = cv2.imencode('.jpg', frame1)
+        return jpeg.tobytes()
 
     def get_frame(self):
-        ret, frame = self.video_capture2.read()
-        if ret:
-            ret, jpeg = cv2.imencode('.jpg', frame)
-            return jpeg.tobytes()
-        else:
-            self.get_frame()
+        ret, frame = self.one_frame()
+        ret, jpeg = cv2.imencode('.jpg', frame)
+        return jpeg.tobytes()
 
+    def one_frame(self):
+        ret, frame = self.video_capture.read()
+        if ret:
+            return ret,frame
+        else:
+            self.one_frame()
     
+    def two_frame(self):
+        ret1, frame1 = self.video_capture.read()
+        ret2, frame2 = self.video_capture.read()
+        if ret1 == True and ret2== True:
+            return frame1, frame2
+        elif ret1 == True and ret2 != True:
+            ret2, frame2 = self.one_frame()
+            return frame1, frame2
+        elif ret1 != True and ret2 == True:
+            ret2, frame1 = self.one_frame()
+            return frame1, frame2
+        else:
+            self.two_frame()
